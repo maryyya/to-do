@@ -354,14 +354,13 @@
             clickAllDialog(type) {
                 if (type === 'recover' && this.removedTask.length < 1) {
                     this.errorBar = true
-                    this.errorBarMsg = 'No deleted tasks'
+                    this.errorBarMsg = 'No deleted tasks, so nothing to recover'
+                } else if (type === 'recover') {
+                    this.recoverAllDialog = true
                 } else if (this.selectedTask.length < 1) {
                     this.errorBar = true
                     this.errorBarMsg = 'Please select a task'
-                    return
-                }
-
-                if (type === 'mark') {
+                } else if (type === 'mark') {
                     this.markAllDoneDialog = true
                 } else {
                     this.deleteAllDialog = true
