@@ -1,18 +1,14 @@
 <template>
     <div id="tasks">
         <v-data-table
-            :headers="headers"
-            :items="!deleteFlag?tasks:removedTask"
-            sort-by="dtcreate"
-            sort-desc
-            show-select
-            v-model="selectedTask"
+                :headers="headers"
+                :items="!deleteFlag?tasks:removedTask"
+                sort-by="dtcreate"
+                sort-desc
+                show-select
+                v-model="selectedTask"
+                :item-class="rowClass"
         >
-            <template v-slot:item.done="{ item }">
-                <v-btn :disabled="item.delflg === delFlgList.inactive" class="mx-2" fab x-small @click="markAsCompleted(item)">
-                    <v-icon v-if="item.status === 'completed'" x-small>mdi-check</v-icon>
-                </v-btn>
-            </template>
             <template v-slot:item.name="{ item }">
                 {{ item.name | longDataFormat }}
             </template>
@@ -22,8 +18,8 @@
             <template v-slot:item.status="{ item }">
                 <template v-if="item.delflg == delFlgList.inactive">
                     <v-chip
-                        class="ma-2 wid100"
-                        small
+                            class="ma-2 wid100"
+                            small
                     >
                         <v-icon left small>mdi-delete</v-icon>
                         Deleted
@@ -33,10 +29,10 @@
                     <div v-for="(status, index) in statusList" :key="index">
                         <template v-if="item.status === status.value">
                             <v-chip
-                                class="ma-2 wid100"
-                                :color="status.color"
-                                outlined
-                                small
+                                    class="ma-2 wid100"
+                                    :color="status.color"
+                                    outlined
+                                    small
                             >
                                 <v-icon left small>{{ status.icon }}</v-icon>
                                 {{ status.text }}
@@ -48,13 +44,11 @@
             <template v-slot:top>
                 <v-row align="center">
                     <template v-if="!deleteFlag">
+                        <v-btn class="ma-2" outlined color="green" @click="clickAllDialog('mark')">
+                            <v-icon left>mdi-check</v-icon>
+                            MARK DONE
+                        </v-btn>
                         <v-dialog v-model="markAllDoneDialog" max-width="290">
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn class="ma-2" outlined color="green" v-bind="attrs" v-on="on">
-                                    <v-icon left>mdi-check</v-icon>
-                                    {{ markAllBtnTitle }}
-                                </v-btn>
-                            </template>
                             <v-card>
                                 <v-card>
                                     <v-card-title class="headline">Confirm</v-card-title>
@@ -64,37 +58,33 @@
                                     <v-card-actions>
                                         <v-spacer></v-spacer>
                                         <v-btn text @click="markAllDoneDialog = false">Cancel</v-btn>
-                                        <v-btn color="green darken-1" text @click="markAllDone">Mark all done</v-btn>
+                                        <v-btn color="green darken-1" text @click="markAllDone">Mark done</v-btn>
                                     </v-card-actions>
                                 </v-card>
                             </v-card>
                         </v-dialog>
+                        <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('delete')">
+                            <v-icon left>mdi-delete-outline</v-icon>
+                            DELETE
+                        </v-btn>
                         <v-dialog v-model="deleteAllDialog" max-width="290">
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn class="ma-2" outlined color="blue-grey" v-bind="attrs" v-on="on">
-                                    <v-icon left>mdi-delete-outline</v-icon>
-                                    {{ deleteBtnTitle }}
-                                </v-btn>
-                            </template>
                             <v-card>
                                 <v-card-title class="headline">Confirm</v-card-title>
                                 <v-card-text>Are you sure you want to delete all these tasks?</v-card-text>
                                 <v-card-actions>
                                     <v-spacer></v-spacer>
                                     <v-btn text @click="deleteAllDialog = false">Cancel</v-btn>
-                                    <v-btn color="green darken-1" text @click="deleteAll">Remove</v-btn>
+                                    <v-btn color="green darken-1" text @click="deleteAll">Delete</v-btn>
                                 </v-card-actions>
                             </v-card>
                         </v-dialog>
                     </template>
                     <template v-else>
+                        <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('recover')">
+                            <v-icon left>mdi-restart</v-icon>
+                            {{ recoverBtnTitle }}
+                        </v-btn>
                         <v-dialog v-model="recoverAllDialog" max-width="290">
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn class="ma-2" outlined color="blue-grey" v-bind="attrs" v-on="on">
-                                    <v-icon left>mdi-restart</v-icon>
-                                    {{ recoverBtnTitle }}
-                                </v-btn>
-                            </template>
                             <v-card>
                                 <v-card-title class="headline">Confirm</v-card-title>
                                 <v-card-text>Are you sure you want to recover all these tasks?</v-card-text>
@@ -108,21 +98,21 @@
                     </template>
                     <v-spacer></v-spacer>
                     <v-btn
-                        color="info"
-                        dark
-                        class="ma-2"
-                        @click="updateTask(defaultTask)"
+                            color="info"
+                            dark
+                            class="ma-2"
+                            @click="updateTask(defaultTask, 'update')"
                     >
                         <v-icon left>mdi-playlist-plus</v-icon>
                         {{ newTaskLabel }}
                     </v-btn>
                 </v-row>
                 <v-switch
-                    v-model="deleteFlag"
-                    label="Show deleted tasks"
-                    color="info"
-                    hide-details
-                    class="showDeleted"
+                        v-model="deleteFlag"
+                        label="Show deleted tasks"
+                        color="info"
+                        hide-details
+                        class="showDeleted"
                 ></v-switch>
                 <v-form ref="taskForm">
                     <v-dialog v-model="editDialog" max-width="500">
@@ -136,7 +126,7 @@
                                         <v-col cols="12">
                                             <v-text-field v-model="editedTask.name" required
                                                           :rules="[v => !!v || 'Please enter the task name.']"
-                                                          :disabled="editedTask.delflg === delFlgList.inactive">
+                                                          :disabled="editedTask.delflg == delFlgList.inactive">
                                                 <template v-slot:label>
                                                     <span>Task Name <span class="red--text">*</span></span>
                                                 </template>
@@ -145,7 +135,7 @@
                                         <v-col cols="12">
                                             <v-textarea v-model="editedTask.desc" required
                                                         :rules="[v => !!v || 'Please enter the task description.']"
-                                                        :disabled="editedTask.delflg === delFlgList.inactive">
+                                                        :disabled="editedTask.delflg == delFlgList.inactive">
                                                 <template v-slot:label>
                                                     <span>Task Description <span class="red--text">*</span></span>
                                                 </template>
@@ -153,13 +143,13 @@
                                         </v-col>
                                         <v-col cols="12">
                                             <v-select
-                                                v-model="editedTask.status"
-                                                :items="statusList"
-                                                :rules="[v => !!v || 'Please select a status.']"
-                                                :disabled="editedTask.delflg === delFlgList.inactive"
-                                                required
-                                                item-value="value"
-                                                item-text="text"
+                                                    v-model="editedTask.status"
+                                                    :items="statusList"
+                                                    :rules="[v => !!v || 'Please select a status.']"
+                                                    :disabled="editedTask.delflg == delFlgList.inactive"
+                                                    required
+                                                    item-value="value"
+                                                    item-text="text"
                                             >
                                                 <template v-slot:label>
                                                     <span>Task Status <span class="red--text">*</span></span>
@@ -174,13 +164,10 @@
                             <v-card-actions>
                                 <v-spacer></v-spacer>
                                 <v-btn text @click="cancel('edit')">Cancel</v-btn>
-                                <v-btn color="green" v-if="editedTask.delflg === delFlgList.active && editedId > -1"
-                                       text @click="removeTask(editedTask)">Remove
-                                </v-btn>
-                                <v-btn color="blue" v-if="editedTask.delflg === delFlgList.active" text
+                                <v-btn color="blue" v-if="editedTask.delflg == delFlgList.active" text
                                        @click="save">Save
                                 </v-btn>
-                                <v-btn color="blue" v-if="editedTask.delflg === delFlgList.inactive" text
+                                <v-btn color="blue" v-if="editedTask.delflg == delFlgList.inactive" text
                                        @click="save">Recover
                                 </v-btn>
                             </v-card-actions>
@@ -188,8 +175,8 @@
                     </v-dialog>
                 </v-form>
                 <v-dialog
-                    v-model="deleteDialog"
-                    max-width="350"
+                        v-model="deleteDialog"
+                        max-width="350"
                 >
                     <v-card>
                         <v-card-title class="headline">{{ editedTask.name }}
@@ -206,10 +193,22 @@
                 </v-dialog>
             </template>
             <template v-slot:item.actions="{ item }">
-                <v-icon @click="updateTask(item)">mdi-file-document-edit-outline</v-icon>
-                <v-icon v-if="item.delflg === delFlgList.active" @click="removeTask(item)">mdi-delete-outline</v-icon>
+                <v-icon @click="updateTask(item, 'update')">mdi-file-document-edit-outline</v-icon>
+                <v-icon v-if="item.delflg == delFlgList.active" @click="updateTask(item, 'delete')">
+                    mdi-delete-outline
+                </v-icon>
             </template>
         </v-data-table>
+        <v-snackbar
+            v-model="errorBar"
+            color="error"
+            top="top"
+            timeout="1000"
+        >{{ errorBarMsg }}
+            <template v-slot:action="{ attrs }">
+                <v-icon @click="errorBar = false" v-bind="attrs">mdi-close</v-icon>
+            </template>
+        </v-snackbar>
     </div>
 </template>
 <script>
@@ -218,6 +217,8 @@
         name: 'Tasks',
         data() {
             return {
+                errorBar         : false,
+                errorBarMsg      : '',
                 deleteFlag       : false,
                 tasks            : [],
                 removedTask      : [],
@@ -235,9 +236,8 @@
                 deleteDialog     : false,
                 markAllDoneDialog: false,
                 deleteAllDialog  : false,
-                recoverAllDialog  : false,
+                recoverAllDialog : false,
                 headers          : [
-                    {text: 'Mark as done', value: 'done', sortable: false, width: '105'},
                     {text: 'Task Name', value: 'name', width: '200'},
                     {text: 'Task Description', value: 'desc', width: '200'},
                     {text: 'Date Created', value: 'dtcreate', width: '200'},
@@ -273,16 +273,8 @@
                 return this.editedId > -1 ? this.editTaskLabel : this.newTaskLabel
             },
 
-            markAllBtnTitle() {
-                return this.selectedTask.length > 0?'Mark as done':'Mark all as done'
-            },
-
-            deleteBtnTitle() {
-                return this.selectedTask.length > 0?'Delete':'Delete All'
-            },
-
             recoverBtnTitle() {
-                return this.selectedTask.length > 0?'Recover':'Recover All'
+                return this.selectedTask.length > 0 ? 'Recover' : 'Recover All'
             },
         },
 
@@ -312,7 +304,7 @@
 
         filters: {
             longDataFormat: (val) => {
-                return val && val.length > 101 ? val.substr(0, 100)+'...' : val
+                return val && val.length > 101 ? val.substr(0, 100) + '...' : val
             },
         },
 
@@ -343,13 +335,47 @@
 
         methods: {
             /**
+             * Set class for each row
+             * on the table
+             *
+             * @param object item item data
+             */
+            rowClass(item) {
+                return item.status === 'completed' ? 'completedRow' : ''
+            },
+
+            /**
+             * When all click button is clicked.
+             * Like when recover all, delete, and
+             * mark done button is clicked
+             *
+             * @param string type 'delete' OR 'mark' OR 'recover'
+             */
+            clickAllDialog(type) {
+                if (type === 'recover' && this.removedTask.length < 1) {
+                    this.errorBar = true
+                    this.errorBarMsg = 'No deleted tasks'
+                } else if (this.selectedTask.length < 1) {
+                    this.errorBar = true
+                    this.errorBarMsg = 'Please select a task'
+                    return
+                }
+
+                if (type === 'mark') {
+                    this.markAllDoneDialog = true
+                } else {
+                    this.deleteAllDialog = true
+                }
+            },
+
+            /**
              * To mark all tasks done
              */
             markAllDone() {
                 this.tasks.map((item) => {
                     let selectedTask = this.selectedTask
-                    var selected = selectedTask.find(x => x.id === item.id)
-                    if (selectedTask.length < 1 || (selected && selected.id === item.id)) {
+                    let selected = selectedTask.find(x => x.id == item.id)
+                    if (selectedTask.length < 1 || (selected && selected.id == item.id)) {
                         item.status = 'completed'
                     }
                     return item
@@ -366,8 +392,8 @@
             deleteAll() {
                 this.tasks = this.tasks.map((item) => {
                     let selectedTask = this.selectedTask
-                    var selected = selectedTask.find(x => x.id === item.id)
-                    if (selectedTask.length < 1 || (selected && selected.id === item.id)) {
+                    let selected = selectedTask.find(x => x.id == item.id)
+                    if (selectedTask.length < 1 || (selected && selected.id == item.id)) {
                         item.delflg = this.delFlgList.inactive
                         this.removedTask.push(item)
                     }
@@ -395,50 +421,32 @@
                         this.tasks.push(item)
                     });
                     this.removedTask = this.removedTask.filter((item) => {
-                        var selected = this.selectedTask.find(x => x.id === item.id)
+                        let selected = this.selectedTask.find(x => x.id == item.id)
                         return typeof selected === 'undefined'
                     })
                     this.selectedTask = []
                 }
+                this.deleteFlag = false
                 this.recoverAllDialog = false
-            },
-
-            /**
-             * To mark completed task
-             * from the table itself
-             */
-            markAsCompleted(item) {
-                this.tasks = this.tasks.map((val) => {
-                    if (val.id == item.id) {
-                        item.status = item.status !== 'completed' ? 'completed' : 'pending'
-                        item.dtupdate = this.getDateTime(new Date())
-                        return item
-                    } else {
-                        return val
-                    }
-                });
             },
 
             /**
              * To update the data of
              * the task which will
              * open the update dialog
+             *
+             * @param object item item data
+             * @param string type 'update' or 'delete'
              */
-            updateTask(item) {
-                this.editedId = item.id == 0 ? -1 : item.id
+            updateTask(item, type) {
+                if (type === 'update') {
+                    this.editDialog = true
+                    this.editedId = item.id == 0 ? -1 : item.id
+                } else {
+                    this.editedId = item.id
+                    this.deleteDialog = true
+                }
                 this.editedTask = Object.assign({}, item)
-                this.editDialog = true
-            },
-
-            /**
-             * To remove the task
-             * which will open the
-             * delete dialog
-             */
-            removeTask(item) {
-                this.editedId = item.id
-                this.editedTask = Object.assign({}, item)
-                this.deleteDialog = true
             },
 
             /**
@@ -476,39 +484,41 @@
              */
             save() {
                 // for validation
-                if (this.$refs.taskForm.validate()) {
-                    if (this.editedId > -1) {
-                        this.editedTask.dtupdate = this.getDateTime(new Date())
-                        if (this.editedTask.delflg === this.delFlgList.inactive) {
-                            this.editedTask.delflg = this.delFlgList.active
-                            this.tasks.push(this.editedTask)
-                            this.tasks.sort((a, b) => {
-                                let dateA = new Date(a.dtcreate),
-                                    dateB = new Date(b.dtcreate)
-                                return dateB - dateA || a.id - b.id
-                            })
-                            this.removedTask = this.removedTask.filter(item => this.editedTask.id !== item.id)
-                        }
+                if (!this.$refs.taskForm.validate()) {
+                    return false
+                }
 
-                        this.tasks = this.tasks.map(item => {
-                            return item.id === this.editedTask.id ? this.editedTask : item
+                // for updating a data
+                if (this.editedId > -1) {
+                    this.editedTask.dtupdate = this.getDateTime(new Date())
+                    if (this.editedTask.delflg == this.delFlgList.inactive) {
+                        this.editedTask.delflg = this.delFlgList.active
+                        this.tasks.push(this.editedTask)
+                        this.tasks.sort((a, b) => {
+                            let dateA = new Date(a.dtcreate),
+                                dateB = new Date(b.dtcreate)
+                            return dateB - dateA || a.id - b.id
                         })
-                    } else {
-                        let taskMaxId = this.tasks.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1
-                        let removedMaxId = this.removedTask.reduce((maxId, item) => Math.max(maxId, item.id), 0)
-                        let maxId = taskMaxId === removedMaxId ? taskMaxId + 1 : taskMaxId
-                        if (this.tasks.length < 1) {
-                            maxId = removedMaxId + 1
-                        }
-                        this.editedTask.id = maxId
-                        this.editedTask.dtcreate = this.getDateTime(new Date())
-                        this.tasks.unshift(this.editedTask)
+                        this.removedTask = this.removedTask.filter(item => this.editedTask.id !== item.id)
                     }
 
-                    this.editedId = this.defaultIndex
-                    this.deleteFlag = false
-                    this.editDialog = false
+                    this.tasks = this.tasks.map(item => {
+                        return item.id == this.editedTask.id ? this.editedTask : item
+                    })
+                } else {
+                    // creating new task
+                    let taskMaxId = this.tasks.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1
+                    let removedMaxId = this.removedTask.reduce((maxId, item) => Math.max(maxId, item.id), 0)
+                    let maxId = taskMaxId == removedMaxId ? taskMaxId + 1 : taskMaxId
+                    maxId = this.tasks.length < 1 ? removedMaxId + 1 : maxId
+                    this.editedTask.id = maxId
+                    this.editedTask.dtcreate = this.getDateTime(new Date())
+                    this.tasks.unshift(this.editedTask)
                 }
+
+                this.editedId = this.defaultIndex
+                this.deleteFlag = false
+                this.editDialog = false
             },
 
             /**
@@ -539,6 +549,7 @@
     #tasks {
         margin: 15px 10px;
     }
+
     .wid100 {
         width: 100px;
     }
@@ -549,5 +560,10 @@
 
     .showDeleted {
         margin-bottom: 16px;
+    }
+
+    >>> .completedRow {
+        background-color: #cdcdcd;
+        font-style: italic;
     }
 </style>
