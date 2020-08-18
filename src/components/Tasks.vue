@@ -1,5 +1,155 @@
 <template>
     <div id="tasks">
+        <v-row align="center">
+            <template v-if="!deleteFlag">
+                <v-btn class="ma-2" outlined color="green" @click="clickAllDialog('mark')">
+                    <v-icon left>mdi-check</v-icon>
+                    MARK DONE
+                </v-btn>
+                <v-dialog v-model="markAllDoneDialog" max-width="290">
+                    <v-card>
+                        <v-card>
+                            <v-card-title class="headline">Confirm</v-card-title>
+                            <v-card-text>
+                                Are you sure you want to mark all these tasks done?
+                            </v-card-text>
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn text @click="markAllDoneDialog = false">Cancel</v-btn>
+                                <v-btn color="green darken-1" text @click="markAllDone">Mark done</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-card>
+                </v-dialog>
+                <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('delete')">
+                    <v-icon left>mdi-delete-outline</v-icon>
+                    DELETE
+                </v-btn>
+                <v-dialog v-model="deleteAllDialog" max-width="290">
+                    <v-card>
+                        <v-card-title class="headline">Confirm</v-card-title>
+                        <v-card-text>Are you sure you want to delete all these tasks?</v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn text @click="deleteAllDialog = false">Cancel</v-btn>
+                            <v-btn color="green darken-1" text @click="deleteAll">Delete</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
+            <template v-else>
+                <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('recover')">
+                    <v-icon left>mdi-restart</v-icon>
+                    {{ recoverBtnTitle }}
+                </v-btn>
+                <v-dialog v-model="recoverAllDialog" max-width="290">
+                    <v-card>
+                        <v-card-title class="headline">Confirm</v-card-title>
+                        <v-card-text>Are you sure you want to recover all these tasks?</v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn text @click="recoverAllDialog = false">Cancel</v-btn>
+                            <v-btn color="green darken-1" text @click="recoverAll">Recover</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
+            <v-spacer></v-spacer>
+            <v-btn
+                    color="info"
+                    dark
+                    class="ma-2"
+                    @click="updateTask(defaultTask, 'update')"
+            >
+                <v-icon left>mdi-playlist-plus</v-icon>
+                {{ newTaskLabel }}
+            </v-btn>
+        </v-row>
+        <v-switch
+                v-model="deleteFlag"
+                label="Show deleted tasks"
+                color="info"
+                hide-details
+                class="showDeleted"
+                @click="selectedTask=[]"
+        ></v-switch>
+        <v-form ref="taskForm">
+            <v-dialog v-model="editDialog" max-width="500">
+                <v-card>
+                    <v-card-title>
+                        <span class="headline">{{ formTitle }}</span>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="12">
+                                    <v-text-field v-model="editedTask.name" required
+                                                  :rules="[v => !!v || 'Please enter the task name.']"
+                                                  :disabled="editedTask.delflg == delFlgList.inactive">
+                                        <template v-slot:label>
+                                            <span>Task Name <span class="red--text">*</span></span>
+                                        </template>
+                                    </v-text-field>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-textarea v-model="editedTask.desc" required
+                                                :rules="[v => !!v || 'Please enter the task description.']"
+                                                :disabled="editedTask.delflg == delFlgList.inactive">
+                                        <template v-slot:label>
+                                            <span>Task Description <span class="red--text">*</span></span>
+                                        </template>
+                                    </v-textarea>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-select
+                                            v-model="editedTask.status"
+                                            :items="statusList"
+                                            :rules="[v => !!v || 'Please select a status.']"
+                                            :disabled="editedTask.delflg == delFlgList.inactive"
+                                            required
+                                            item-value="value"
+                                            item-text="text"
+                                    >
+                                        <template v-slot:label>
+                                            <span>Task Status <span class="red--text">*</span></span>
+                                        </template>
+                                    </v-select>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                        <small><span class="red--text">*</span> indicates required field</small>
+                    </v-card-text>
+
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn text @click="cancel('edit')">Cancel</v-btn>
+                        <v-btn color="blue" v-if="editedTask.delflg == delFlgList.active" text
+                               @click="save">Save
+                        </v-btn>
+                        <v-btn color="blue" v-if="editedTask.delflg == delFlgList.inactive" text
+                               @click="save">Recover
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </v-form>
+        <v-dialog
+                v-model="deleteDialog"
+                max-width="350"
+        >
+            <v-card>
+                <v-card-title class="headline">{{ editedTask.name }}
+                </v-card-title>
+                <v-card-text>
+                    Are you sure you want to delete this task?
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn text @click="cancel('delete')">Cancel</v-btn>
+                    <v-btn color="green darken-1" text @click="remove">Remove</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
         <v-data-table
                 :headers="headers"
                 :items="!deleteFlag?tasks:removedTask"
@@ -41,157 +191,6 @@
                     </div>
                 </template>
             </template>
-            <template v-slot:top>
-                <v-row align="center">
-                    <template v-if="!deleteFlag">
-                        <v-btn class="ma-2" outlined color="green" @click="clickAllDialog('mark')">
-                            <v-icon left>mdi-check</v-icon>
-                            MARK DONE
-                        </v-btn>
-                        <v-dialog v-model="markAllDoneDialog" max-width="290">
-                            <v-card>
-                                <v-card>
-                                    <v-card-title class="headline">Confirm</v-card-title>
-                                    <v-card-text>
-                                        Are you sure you want to mark all these tasks done?
-                                    </v-card-text>
-                                    <v-card-actions>
-                                        <v-spacer></v-spacer>
-                                        <v-btn text @click="markAllDoneDialog = false">Cancel</v-btn>
-                                        <v-btn color="green darken-1" text @click="markAllDone">Mark done</v-btn>
-                                    </v-card-actions>
-                                </v-card>
-                            </v-card>
-                        </v-dialog>
-                        <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('delete')">
-                            <v-icon left>mdi-delete-outline</v-icon>
-                            DELETE
-                        </v-btn>
-                        <v-dialog v-model="deleteAllDialog" max-width="290">
-                            <v-card>
-                                <v-card-title class="headline">Confirm</v-card-title>
-                                <v-card-text>Are you sure you want to delete all these tasks?</v-card-text>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn text @click="deleteAllDialog = false">Cancel</v-btn>
-                                    <v-btn color="green darken-1" text @click="deleteAll">Delete</v-btn>
-                                </v-card-actions>
-                            </v-card>
-                        </v-dialog>
-                    </template>
-                    <template v-else>
-                        <v-btn class="ma-2" outlined color="blue-grey" @click="clickAllDialog('recover')">
-                            <v-icon left>mdi-restart</v-icon>
-                            {{ recoverBtnTitle }}
-                        </v-btn>
-                        <v-dialog v-model="recoverAllDialog" max-width="290">
-                            <v-card>
-                                <v-card-title class="headline">Confirm</v-card-title>
-                                <v-card-text>Are you sure you want to recover all these tasks?</v-card-text>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn text @click="recoverAllDialog = false">Cancel</v-btn>
-                                    <v-btn color="green darken-1" text @click="recoverAll">Recover</v-btn>
-                                </v-card-actions>
-                            </v-card>
-                        </v-dialog>
-                    </template>
-                    <v-spacer></v-spacer>
-                    <v-btn
-                            color="info"
-                            dark
-                            class="ma-2"
-                            @click="updateTask(defaultTask, 'update')"
-                    >
-                        <v-icon left>mdi-playlist-plus</v-icon>
-                        {{ newTaskLabel }}
-                    </v-btn>
-                </v-row>
-                <v-switch
-                        v-model="deleteFlag"
-                        label="Show deleted tasks"
-                        color="info"
-                        hide-details
-                        class="showDeleted"
-                ></v-switch>
-                <v-form ref="taskForm">
-                    <v-dialog v-model="editDialog" max-width="500">
-                        <v-card>
-                            <v-card-title>
-                                <span class="headline">{{ formTitle }}</span>
-                            </v-card-title>
-                            <v-card-text>
-                                <v-container>
-                                    <v-row>
-                                        <v-col cols="12">
-                                            <v-text-field v-model="editedTask.name" required
-                                                          :rules="[v => !!v || 'Please enter the task name.']"
-                                                          :disabled="editedTask.delflg == delFlgList.inactive">
-                                                <template v-slot:label>
-                                                    <span>Task Name <span class="red--text">*</span></span>
-                                                </template>
-                                            </v-text-field>
-                                        </v-col>
-                                        <v-col cols="12">
-                                            <v-textarea v-model="editedTask.desc" required
-                                                        :rules="[v => !!v || 'Please enter the task description.']"
-                                                        :disabled="editedTask.delflg == delFlgList.inactive">
-                                                <template v-slot:label>
-                                                    <span>Task Description <span class="red--text">*</span></span>
-                                                </template>
-                                            </v-textarea>
-                                        </v-col>
-                                        <v-col cols="12">
-                                            <v-select
-                                                    v-model="editedTask.status"
-                                                    :items="statusList"
-                                                    :rules="[v => !!v || 'Please select a status.']"
-                                                    :disabled="editedTask.delflg == delFlgList.inactive"
-                                                    required
-                                                    item-value="value"
-                                                    item-text="text"
-                                            >
-                                                <template v-slot:label>
-                                                    <span>Task Status <span class="red--text">*</span></span>
-                                                </template>
-                                            </v-select>
-                                        </v-col>
-                                    </v-row>
-                                </v-container>
-                                <small><span class="red--text">*</span> indicates required field</small>
-                            </v-card-text>
-
-                            <v-card-actions>
-                                <v-spacer></v-spacer>
-                                <v-btn text @click="cancel('edit')">Cancel</v-btn>
-                                <v-btn color="blue" v-if="editedTask.delflg == delFlgList.active" text
-                                       @click="save">Save
-                                </v-btn>
-                                <v-btn color="blue" v-if="editedTask.delflg == delFlgList.inactive" text
-                                       @click="save">Recover
-                                </v-btn>
-                            </v-card-actions>
-                        </v-card>
-                    </v-dialog>
-                </v-form>
-                <v-dialog
-                        v-model="deleteDialog"
-                        max-width="350"
-                >
-                    <v-card>
-                        <v-card-title class="headline">{{ editedTask.name }}
-                        </v-card-title>
-                        <v-card-text>
-                            Are you sure you want to delete this task?
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn text @click="cancel('delete')">Cancel</v-btn>
-                            <v-btn color="green darken-1" text @click="remove">Remove</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
-            </template>
             <template v-slot:item.actions="{ item }">
                 <v-icon @click="updateTask(item, 'update')">mdi-file-document-edit-outline</v-icon>
                 <v-icon v-if="item.delflg == delFlgList.active" @click="updateTask(item, 'delete')">
@@ -200,10 +199,10 @@
             </template>
         </v-data-table>
         <v-snackbar
-            v-model="errorBar"
-            color="error"
-            top="top"
-            timeout="1000"
+                v-model="errorBar"
+                color="error"
+                top="top"
+                timeout="1000"
         >{{ errorBarMsg }}
             <template v-slot:action="{ attrs }">
                 <v-icon @click="errorBar = false" v-bind="attrs">mdi-close</v-icon>
@@ -212,7 +211,6 @@
     </div>
 </template>
 <script>
-
     export default {
         name: 'Tasks',
         data() {
@@ -313,7 +311,7 @@
                 this.tasks = JSON.parse(localStorage.tasks)
             } else {
                 let date = this.getDateTime(new Date)
-                for (let i = 1; i <= 1000; i++) {
+                for (let i = 1; i <= 2; i++) {
                     this.tasks.push({
                         id      : i,
                         name    : 'Task Name ' + i,
@@ -423,8 +421,8 @@
                         let selected = this.selectedTask.find(x => x.id == item.id)
                         return typeof selected === 'undefined'
                     })
-                    this.selectedTask = []
                 }
+                this.selectedTask = []
                 this.deleteFlag = false
                 this.recoverAllDialog = false
             },
@@ -473,6 +471,7 @@
                     return item
                 }).filter(item => item.delflg < 1)
                 this.editedId = this.defaultIndex
+                this.selectedTask = []
                 this.deleteDialog = false
                 this.editDialog = false
             },
@@ -490,6 +489,8 @@
                 // for updating a data
                 if (this.editedId > -1) {
                     this.editedTask.dtupdate = this.getDateTime(new Date())
+
+                    // recovering a data
                     if (this.editedTask.delflg == this.delFlgList.inactive) {
                         this.editedTask.delflg = this.delFlgList.active
                         this.tasks.push(this.editedTask)
@@ -516,6 +517,7 @@
                 }
 
                 this.editedId = this.defaultIndex
+                this.selectedTask = [];
                 this.deleteFlag = false
                 this.editDialog = false
             },
